@@ -46,7 +46,7 @@ is 'b a\nd c\n'                      '%2$s %1$s\n' a b c d               # reuse
 is '1%2\n'                           '%1$d%%%2$d\n' 1 2
 err 'a b\nc '                       '%1$s %2$s\n' a b c                 # missing numbered: error, mid-pass
 # multibyte char constant
-export LC_ALL=en_US.UTF-8; is '233 8364\n' '%d %d\n' "'é" "'€"; unset LC_ALL
+export LC_ALL=en_US.UTF-8; is '195 226\n' '%d %d\n' "'é" "'€"; unset LC_ALL  # POSIX locale only: the first byte
 # usage and bad formats
 is '-- x\n'                          -- '%s %s\n' -- x                   # first -- discarded
 "$p" >/dev/null 2>&1 && fail 'no format exited 0'

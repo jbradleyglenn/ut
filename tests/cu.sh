@@ -4,7 +4,7 @@ c="$XCU_BIN/cu"
 fail() { echo "cu: $*" >&2; exit 1; }
 bad()  { if printf 'a:b\n' | "$c" "$@" >/dev/null 2>&1; then fail "$* exited 0"; fi; }
 # is input want args...: compare output (newlines as |) with want (both printf-escaped)
-is()   { in=$1 want=$(printf "$2"); shift 2; got=$(printf "$in" | "$c" "$@" | tr '\n' '|') || fail "$* failed"; [ "$got" = "$want" ] || fail "$*: want $want, got $got"; }
+is()   { in=$1 want=$(printf "$2"); shift 2; got=$(printf "$in" | "$c" "$@" | LC_ALL=C tr '\n' '|') || fail "$* failed"; [ "$got" = "$want" ] || fail "$*: want $want, got $got"; }
 # lists
 is 'abcdefghi\n'   'abdefg|'        -c 6,2,4-7,1         # input order, each once (RATIONALE)
 is 'abcdefghij\n'  'abcdej|'        -c '-5 10'           # -high, blank-separated
@@ -22,21 +22,19 @@ is 'a\tb\n'        'b|'             -f 2                 # default delimiter tab
 is 'nodelim\n'     'nodelim|'       -d : -f 2            # passed through intact
 is 'x\nnodelim\na:b\n' 'b|'         -d : -s -f 2         # -s drops it
 is '\n'            '|'              -d : -f 1
-# multibyte
+# POSIX locale only: every byte is a character, whatever LANG and LC_* say
 export LC_ALL=en_US.UTF-8
-is 'h\303\251llo\n' '\303\251|'     -c 2
-is 'h\303\251llo\n' 'l|'            -c 4
+is 'h\303\251llo\n' '\303|'         -c 2
+is 'h\303\251llo\n' 'l|'            -c 5
 is 'h\303\251llo\n' '\303\251l|'    -b 2-4
-is 'h\303\251llo\n' '|'             -n -b 2              # first byte of a 2-byte char: dropped
-is 'h\303\251llo\n' '\303\251|'     -n -b 3              # last byte: whole char
-is 'h\303\251llo\n' 'h|'            -n -b 1-2            # high mid-char backs off
-is 'h\303\251llo\n' '\303\251llo|'  -n -b 3-             # low mid-char backs up
-is 'a\303\251b\303\251c\n' 'b\303\251c|' -d "$(printf '\303\251')" -f 2-
+is 'h\303\251llo\n' '\303|'         -n -b 2              # -n: no character spans bytes
+is 'h\303\251llo\n' '\303\251llo|'  -n -b 2-
 # -n split guarantee from APPLICATION USAGE: halves rejoin to the original
 s=$(printf 'ab\303\251\303\251cd\303\251')
 for i in 1 2 3 4 5 6 7 8 9 10; do
   [ "$(printf '%s\n' "$s" | "$c" -n -b 1-$i)$(printf '%s\n' "$s" | "$c" -n -b $((i+1))-)" = "$s" ] || fail "-n split at $i"
 done
+bad -f 1 -d "$(printf '\303\251')"  # a two-byte delimiter is two characters
 unset LC_ALL
 # files
 d=$(mktemp -d); trap 'rm -rf "$d"' EXIT

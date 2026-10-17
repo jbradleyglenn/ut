@@ -5,7 +5,7 @@ export LC_ALL=C
 fail() { echo "so: $*" >&2; exit 1; }
 bad()  { if printf 'b\na\n' | "$s" "$@" >/dev/null 2>&1; then fail "$* exited 0"; fi; }
 # is input want args...: compare output (newlines as |) with want
-is()   { in=$1 want=$(printf -- "$2"); shift 2; got=$(printf -- "$in" | "$s" "$@" | tr '\n' '|') || fail "$* failed"; [ "$got" = "$want" ] || fail "$*: want $want, got $got"; }
+is()   { in=$1 want=$(printf -- "$2"); shift 2; got=$(printf -- "$in" | "$s" "$@" | LC_ALL=C tr '\n' '|') || fail "$* failed"; [ "$got" = "$want" ] || fail "$*: want $want, got $got"; }
 # st input want args...: exit status
 st()   { in=$1 want=$2; shift 2; got=0; printf -- "$in" | "$s" "$@" >/dev/null 2>&1 || got=$?; [ "$got" = "$want" ] || fail "$*: want rc $want, got $got"; }
 is 'b\na\nc\n'          'a|b|c|'
@@ -36,10 +36,13 @@ is 'a 2\nb 1\n'         'b 1|a 2|'        -k2,2n -k1,1
 is 'x 1\ny 1\n'         'y 1|x 1|'        -r -k2,2n # -r still applies to the tie-break
 is 'b\na\n'             'a|b|'            -m
 is 'a b\nb a\n'         'a b|b a|'        -k3       # missing field: empty key
-(export LC_ALL=en_US.UTF-8
- is '1,000\n999\n'      '999|1,000|'      -n        # thousands separator
- is '\303\251b\nea\n'   'ea|\303\251b|'   -k1.2     # characters, not bytes
- is 'x\303\227b\ny\303\227a\n' 'y\303\227a|x\303\227b|' -t "$(printf '\303\227')" -k2)
+(export LC_ALL=en_US.UTF-8                          # POSIX locale only, whatever LANG and LC_* say:
+ is '1,000\n999\n'      '1,000|999|'      -n        # no thousands separator: 1,000 is 1
+ is '\303\251a\neb\n'   'eb|\303\251a|'   -k1.2     # bytes, not characters
+ is 'b\na\nB\nA\n'      'A|B|a|b|'                  # byte order, not dictionary order
+ is 'a\200\nab\n'       'ab|a\200|'                 # bytes compare unsigned
+ [ "$(printf 'b\0z\nb\0a\n' | "$s" | LC_ALL=C od -A n -c | LC_ALL=C tr -d ' \n')" = 'b\0a\nb\0z\n' ] || fail 'nul byte'
+ st 'a\n' 2             -t "$(printf '\303\227')")  # a two-byte -t is two characters
 # -o may name an input
 d=$(mktemp -d); trap 'rm -rf "$d"' EXIT
 printf 'b\na\n' >"$d/f"; "$s" -o "$d/f" "$d/f"; [ "$(cat "$d/f")" = "$(printf 'a\nb')" ] || fail '-o input'

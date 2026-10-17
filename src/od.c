@@ -7,9 +7,8 @@
 #define LI (J)(z==1?LD(int8_t):z==2?LD(int16_t):z==4?LD(int32_t):LD(int64_t))
 #define LF (z==sizeof(float)?LD(float):z==sizeof(double)?LD(double):LD(long double))
 struct t{char k;I z,d,w;}*ts;I nt;       // type letter, size in bytes, natural width, field width
-C buf[B+MB_LEN_MAX],prv[B];              // block + lookahead for type c; previous block
-I cl[B],pcl[B],cont,rc;                  // per byte, for type c: -1 "**", 0 not printable, n printable char of n bytes
-size_t have;UJ left=UINTMAX_MAX;FILE*f;S*av,nm="stdin";
+C buf[B],prv[B];I rc;                    // block; previous block
+UJ left=UINTMAX_MAX;FILE*f;S*av,nm="stdin";
 S nam[]={"nul","soh","stx","etx","eot","enq","ack","bel","bs","ht","nl","vt","ff","cr","so","si",
          "dle","dc1","dc2","dc3","dc4","nak","syn","etb","can","em","sub","esc","fs","gs","rs","us","sp"};
 
@@ -43,13 +42,9 @@ I get(V){
     }
     R EOF;
 }
-V fill(V){
-    I c;W(have<sizeof buf&&left&&(c=get())!=EOF)buf[have++]=c,left--;
-    memset(buf+have,0,sizeof buf-have);  // pad a short last block with nulls
-}
-I clen(C*p,size_t m){                    // length of the printable character at p, or 0
-    mbstate_t st={0};wchar_t wc;size_t r=mbrtowc(&wc,(S)p,m,&st);
-    R r>0&&r<=m&&iswprint(wc)?r:0;
+size_t fill(V){                          // next block; its length
+    I c;size_t n=0;W(n<B&&left&&(c=get())!=EOF)buf[n++]=c,left--;
+    memset(buf+n,0,B-n);R n;             // pad a short last block with nulls
 }
 V line(struct t*t,size_t n){
     for(size_t i=0;i<n;i+=t->z){
@@ -62,8 +57,8 @@ V line(struct t*t,size_t n){
           C('d',O("%*jd",d,LI))
           C('f',O("%*.*Le",d,d-9,LF))
           C('a',O("%*s",d,c==127?"del":c<=32?nam[c]:(char[]){c,0}))
-          C('c',$(cl[i]>0,O("%*s%.*s",d-1,"",cl[i],(S)p))      // a multibyte char never contains a null byte
-                $(cl[i]<0||!*p,O("%*s",d,cl[i]?"**":"\\0"))
+          C('c',$(isprint(*p),O("%*c",d,*p))
+                $(!*p,O("%*s",d,"\\0"))
                 $((q=strchr(E,*p)),O("%*c%c",d-1,'\\',"abfnrtv"[q-E]))
                 O("%*.3o",d,*p)),)
     }
@@ -71,7 +66,6 @@ V line(struct t*t,size_t n){
 }
 I main(I ac,S*argv){
     I o,v=0,star=0,L=0;char a='o',af[]="%07jo";UJ skip=0,off=0;size_t n;
-    setlocale(LC_ALL,"");
     setprog(*argv);
     W((o=getopt(ac,argv,"vA:j:N:t:"))!=-1)S(o,
         C('v',v=1)
@@ -86,10 +80,9 @@ I main(I ac,S*argv){
     N(nt,L=MX(L,(ts[i].d+1)*(B/ts[i].z)))
     N(nt,ts[i].w=L*ts[i].z/B)             // equal-width lines, so columns line up across types
     af[4]=a=='d'?'u':a;
-    for(;fill(),(n=MN(have,(size_t)B));off+=n,memmove(buf,buf+n,have-=n)){
-        N(n,cl[i]=cont?(cont--,-1):(cont=(o=clen(buf+i,have-i))?o-1:0,o))
-        if(!v&&off&&n==B&&!memcmp(buf,prv,B)&&!memcmp(cl,pcl,sizeof cl)){if(!star)puts("*");star=1;continue;}
-        star=0;memcpy(prv,buf,B);memcpy(pcl,cl,sizeof cl);
+    for(;(n=fill());off+=n){
+        if(!v&&off&&n==B&&!memcmp(buf,prv,B)){if(!star)puts("*");star=1;continue;}
+        star=0;memcpy(prv,buf,B);
         N(nt,if(a!='n')i?O("%7s",""):O(af,off);line(ts+i,n))
     }
     if(a!='n')O(af,off),putchar('\n');
