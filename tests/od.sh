@@ -4,7 +4,7 @@ o="$XCU_BIN/od"
 fail() { echo "od: $*" >&2; exit 1; }
 bad()  { if printf abc | "$o" "$@" >/dev/null 2>&1; then fail "$* exited 0"; fi; }
 # is input want args...: compare od output (blanks squeezed) with want
-is()   { in=$1 want=$2; shift 2; got=$(printf "$in" | "$o" "$@" | tr -s ' ' | tr '\n' '|') || fail "$* failed"; [ "$got" = "$want" ] || fail "$*: want $want, got $got"; }
+is()   { in=$1 want=$2; shift 2; got=$(printf "$in" | "$o" "$@" | LC_ALL=C tr -s ' ' | LC_ALL=C tr '\n' '|') || fail "$* failed"; [ "$got" = "$want" ] || fail "$*: want $want, got $got"; }
 is 'ab'            '0000000 061141|0000002|'                    # default -t oS, native (little) endian
 is 'ab'            ' 61 62|'                  -A n -t x1
 is 'abc'           '0000000 61 62 63|0000003|' -t xC
@@ -18,7 +18,7 @@ is '\0\0\0\0\0\0\360\77' ' 1.00000000000000e+00|' -A n -t fD
 x32=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 is "$x32"          '0000000 x x x x x x x x x x x x x x x x|*|0000060|' -t c
 is "$x32"          ' 7878 7878 7878|'         -A n -v -t x2 -N 6 -j 30
-(export LC_ALL=en_US.UTF-8; is '\303\251' '0000000 é **|0000002|' -t c)  # multibyte: rest of char is **
+(export LC_ALL=en_US.UTF-8; is '\303\251' '0000000 303 251|0000002|' -t c)  # POSIX locale only: bytes, not é
 # errors
 bad -A q
 bad -t q

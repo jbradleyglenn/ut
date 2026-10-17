@@ -8,7 +8,6 @@
 #include <inttypes.h>
 #include <iso646.h>
 #include <limits.h>
-#include <locale.h>
 #include <math.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -22,8 +21,6 @@
 #include <strings.h>
 #include <time.h>
 #include <unistd.h>
-#include <wchar.h>
-#include <wctype.h>
 // no complex.h/tgmath.h: complex.h #defines I
 
 typedef unsigned char C;typedef char*S;typedef int I;typedef intmax_t J;typedef uintmax_t UJ;typedef void V; // J UJ match %jd %ju

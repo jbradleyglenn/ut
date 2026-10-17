@@ -16,10 +16,10 @@ V chk(S a,S e){
     $(*e,rc=xwarnx("%s: not completely converted",a))
     if(errno)rc=xwarn("%s",a);
 }
-J ival(S a,I u){                         // missing is 0; 'c is the character's value (rest ignored, as in the spec's "+3); else a C integer constant
-    S e;J v;wchar_t w;mbstate_t st={0};
+J ival(S a,I u){                         // missing is 0; 'c is the byte's value (rest ignored, as in the spec's "+3); else a C integer constant
+    S e;J v;
     P(!a,0)
-    P(*a=='\''||*a=='"',mbrtowc(&w,a+1,MB_LEN_MAX,&st)>MB_LEN_MAX?(C)a[1]:w)
+    P(*a=='\''||*a=='"',(C)a[1])
     errno=0;v=u?(J)strtoumax(a,&e,0):strtoimax(a,&e,0);
     chk(a,e);R v;
 }
@@ -45,7 +45,6 @@ V cv(S*pp){                              // *pp at a %: write one conversion, st
     O(fm,fval(a));
 }
 I main(I ac,S*av){
-    setlocale(LC_ALL,"");
     setprog(*av++);
     if(*av&&!strcmp(*av,"--"))av++;      // no options, but -- is still discarded
     if(!*av)xusage("format [argument...]");

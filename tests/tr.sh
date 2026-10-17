@@ -37,16 +37,17 @@ is 'aaBB\n'         'AB\n'           -s '[:lower:]' '[:upper:]'
 is 'a-a\n'          'a\n'            -ds - a                   # squeeze after deletion
 is 'Ab1  \n'        'b1 \n'          -ds '[:upper:]' '[:space:][=1=]' # any class in string2 of -ds
 is 'abc\n'          'abc\n'          -d ''
-# multibyte
+# POSIX locale only: every byte is a character, whatever LANG and LC_* say
 export LC_ALL=en_US.UTF-8
-is 'h\303\251llo\n' 'H\303\211LLO\n' '[:lower:]' '[:upper:]'
-is 'h\303\251llo\n' 'hello\n'        '\303\251' e              # concatenated octal is one character
+is 'h\303\251llo\n' 'H\303\251LLO\n' '[:lower:]' '[:upper:]'   # bytes above 127 are in no class
+is 'h\303\251llo\n' 'heello\n'       '\303\251' e              # two bytes, two characters
 is 'h\303\251llo\n' 'hllo\n'         -d "$(printf '\303\251')"
-is 'h\303\251llo\n' 'h?llo\n'        -c 'a-z\n' '?'            # one character, not two bytes
-is 'a\377b\n'       'aXb\n'          '\377' X                  # an invalid byte is itself
+is 'h\303\251llo\n' 'h??llo\n'       -c 'a-z\n' '?'
+is 'a\377b\n'       'aXb\n'          '\377' X
 is 'a\377b\n'       'A\377B\n'       a-z A-Z
+is 'a\351b\n'       'axb\n'          -c '\0-\350' x            # the complement is the bytes above \350
+is '\200\377\n'     'xx\n'           '\200-\377' x              # a range over high bytes
 unset LC_ALL
-is 'a\351b\n'       'aXb\n'          '\351' X
 # errors
 bad
 bad a

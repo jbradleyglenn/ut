@@ -22,19 +22,14 @@ is 'a b\nc\n'      '2 3|'        -wl
 is 'a b\nc\n'      '2 6|'        -c -l
 is 'a b\nc\n'      '3 6|'        -mw
 is 'a b\nc\n'      '2 3 6|'      -lwc
-# multibyte
+# POSIX locale only: every byte is a character, whatever LANG and LC_* say
 export LC_ALL=en_US.UTF-8
 is 'h\303\251llo\n' '7|'         -c
-is 'h\303\251llo\n' '6|'         -m
-is 'h\303\251llo\n' '1 1 6|'     -mlw
-is 'a\343\200\200b\n' '2|'       -w                      # U+3000 is white space
-is '\377a b\n'     '2 5|'        -mw                     # invalid byte: one character, not white space
-is '\303'          '1 1|'        -mw                     # incomplete at end
-is '\303a\n'       '1 3|'        -mw                     # truncated sequence: byte, then a
-is '\303 \n'       '1 3|'        -mw
-is '\0\303\251\n'  '3|'          -m
-export LC_ALL=C
-is 'h\303\251llo\n' '7|'         -m                      # C locale: characters are bytes
+is 'h\303\251llo\n' '7|'         -m
+is 'h\303\251llo\n' '1 1 7|'     -mlw
+is 'a\343\200\200b\n' '1|'       -w                      # U+3000 bytes are not white space
+is 'a\205b\240c\n' '1|'          -w                      # nor are any bytes above 127
+unset LC_ALL
 # files
 d=$(mktemp -d); trap 'rm -rf "$d"' EXIT
 printf 'a b\n' >"$d/1"; printf 'c\nd\n' >"$d/2"
