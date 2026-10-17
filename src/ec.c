@@ -1,8 +1,8 @@
 // no flags, no \ interp (posix, not xsi)
 #include"a.h"
-int main(int ac,char**av) {
-    setprog(*av++);
-    for(;*av;av++){fputs(*av,stdout);if(av[1])putchar(' ');}
+I main(I ac,S*av){
+    setprog(*av);
+    N(ac-1,O(&" %s"[!i],av[i+1]))
     putchar('\n');
     xclose();
 }
