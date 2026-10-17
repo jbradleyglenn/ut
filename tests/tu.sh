@@ -3,4 +3,4 @@
 # here would pass even if nothing had been built.
 set -eu
 
-"$XCU_BIN/tr"
+"$XCU_BIN/tu"
