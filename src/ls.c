@@ -1,18 +1,5 @@
 // ls [-ikqrs] [-ln] [-A|-a] [-C|-m|-x|-1] [-F|-p] [-H|-L] [-R|-d] [-S|-f|-t] [-c|-u] [file...]
 #include"a.h"
-#include<dirent.h>
-#include<grp.h>
-#include<pwd.h>
-#include<sys/stat.h>
-#include<sys/types.h>                            // major, minor
-#ifdef __linux__
-#include<sys/sysmacros.h>
-#endif
-#ifdef __APPLE__
-#define st_atim st_atimespec
-#define st_ctim st_ctimespec
-#define st_mtim st_mtimespec
-#endif
 #define U "[-ikqrs] [-ln] [-A|-a] [-C|-m|-x|-1] [-F|-p] [-H|-L] [-R|-d] [-S|-f|-t] [-c|-u] [file...]"
 #define HALFYR 15778476                          // six months: half a Gregorian year, in seconds
 struct e{S nm,pa;struct stat st;};               // name to write, path to it, its information
@@ -22,11 +9,11 @@ I nf,wi,wb,wl,wu,wg,wz;time_t now;               // operand symlinks not followe
 
 I nw(UJ x){R snprintf(0,0,"%ju",x);}
 UJ bk(struct stat*s){R op['k']?((UJ)s->st_blocks+1)/2:(UJ)s->st_blocks;} // st_blocks: 512-byte units
-struct timespec*ts(struct stat*s){R tm=='c'?&s->st_ctim:tm=='u'?&s->st_atim:&s->st_mtim;}
+time_t ts(struct stat*s){R tm=='c'?s->st_ctime:tm=='u'?s->st_atime:s->st_mtime;}
 I cmp(const V*x,const V*y){
-    struct e*l=(V*)x,*r=(V*)y;struct timespec*s=ts(&l->st),*t=ts(&r->st);I c=0;
+    struct e*l=(V*)x,*r=(V*)y;time_t s=ts(&l->st),t=ts(&r->st);I c=0;
     if(so=='S')c=(l->st.st_size<r->st.st_size)-(l->st.st_size>r->st.st_size);  // biggest first
-    if(so=='t')c=s->tv_sec!=t->tv_sec?(s->tv_sec<t->tv_sec)-(s->tv_sec>t->tv_sec):(s->tv_nsec<t->tv_nsec)-(s->tv_nsec>t->tv_nsec); // newest first
+    if(so=='t')c=(s<t)-(s>t);                   // newest first
     if(!c)c=strcmp(l->nm,r->nm);               // the POSIX locale's collation: bytes in order
     R op['r']?-c:c;
 }
@@ -42,7 +29,7 @@ S own(struct stat*s,I g,S b){                    // owner (g: group) name, or it
     if(!op['n']&&g&&(r=getgrgid(s->st_gid)))R r->gr_name;
     sprintf(b,"%ju",g?(UJ)s->st_gid:(UJ)s->st_uid);R b;
 }
-S sz(struct stat*s,S b){S_ISCHR(s->st_mode)||S_ISBLK(s->st_mode)?sprintf(b,"%ju, %ju",(UJ)major(s->st_rdev),(UJ)minor(s->st_rdev)):sprintf(b,"%jd",(J)s->st_size);R b;}
+S sz(struct stat*s,S b){S_ISCHR(s->st_mode)||S_ISBLK(s->st_mode)?sprintf(b,"%ju",(UJ)s->st_rdev):sprintf(b,"%jd",(J)s->st_size);R b;} // device info: st_rdev
 V md(mode_t m,S b){                              // file mode; no alternate access method flag
     *b=S_ISDIR(m)?'d':S_ISBLK(m)?'b':S_ISCHR(m)?'c':S_ISLNK(m)?'l':S_ISFIFO(m)?'p':S_ISSOCK(m)?'s':S_ISREG(m)?'-':'?';
     N(3,I x=m&0100>>3*i,s=m&(I[]){S_ISUID,S_ISGID,S_ISVTX}[i];
@@ -51,7 +38,7 @@ V md(mode_t m,S b){                              // file mode; no alternate acce
     b[10]=0;
 }
 V lg(struct e*e){
-    struct stat*s=&e->st,t;char m[11],u[24],g[24],z[48],d[32],l[PATH_MAX];time_t w=ts(s)->tv_sec;ssize_t k;
+    struct stat*s=&e->st,t;char m[11],u[24],g[24],z[48],d[32],l[PATH_MAX];time_t w=ts(s);ssize_t k;
     md(s->st_mode,m);
     strftime(d,sizeof d,w>now||now-w>HALFYR?"%b %e  %Y":"%b %e %H:%M",localtime(&w));
     pre(s);

@@ -72,7 +72,7 @@ touch a/now
 "$l" -ln a | grep -q '^p.* f$' || fail '-l: FIFO type'
 "$l" -ln a | grep -q '^total [0-9]*$' || fail '-l: total line'
 "$l" -ln a/s1 | grep -q '^total' && fail '-l: total line for a non-directory operand'
-"$l" -ln /dev/null | grep -q '^c.* [0-9][0-9]*, *[0-9][0-9]* ' || fail '-l: device info'
+"$l" -ln /dev/null | grep -q '^c.* [0-9][0-9]* [A-Z][a-z][a-z] ' || fail '-l: device info'
 mkdir m; chmod 7777 m; [ "$("$l" -ldn m | cut -c1-10)" = drwsrwsrwt ] || fail 'mode: set-ID and sticky'
 chmod 7666 m; [ "$("$l" -ldn m | cut -c1-10)" = drwSrwSrwT ] || fail 'mode: not executable'
 chmod 755 m

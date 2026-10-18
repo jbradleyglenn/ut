@@ -2,14 +2,17 @@
 #pragma once
 #include <assert.h>
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fenv.h>
 #include <float.h>
+#include <grp.h>
 #include <inttypes.h>
 #include <iso646.h>
 #include <limits.h>
 #include <math.h>
+#include <pwd.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -20,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 // no complex.h/tgmath.h: complex.h #defines I
