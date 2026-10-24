@@ -3,7 +3,7 @@ CFLAGS   ?= -O2
 CFLAGS   += -std=c99 -Wall -Wshadow 
 CPPFLAGS += -D_POSIX_C_SOURCE=200809L -D_DARWIN_C_SOURCE
 HELPERS := src/a.c
-UTILS   := ca cd cm co cu da ec en fa he ki ls md od pr so tr tu wc
+UTILS   := ca cd cm co cu da ec en fa he ki ls md od pr pw so tr tu wc
 BINS    := $(addprefix build/,$(UTILS))
 a: $(BINS)
 build/%: src/%.c $(HELPERS) $(wildcard src/*.h) ; @mkdir -p build ; $(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -o $@ $< $(HELPERS)
